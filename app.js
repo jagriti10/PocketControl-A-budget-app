@@ -114,5 +114,4 @@ var ctrlrAddItem = function () {
     },
   }
 })(budgetController, UIController);
-
 controller.init();
