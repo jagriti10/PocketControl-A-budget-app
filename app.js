@@ -1,5 +1,8 @@
 // Budget Controller
 //module for calculating budget and adding new item to data structure
+
+
+
 var budgetController = (function() {
   var Expense = function(id,description,value) {
     this.id = id;
@@ -12,7 +15,16 @@ var budgetController = (function() {
     this.description = description;
     this.value = value;    
   };
-  
+  var calculateTotal=function(type){
+    var sum =0;
+    data.allItems[type].forEach(function(cur){
+    sum=sum+cur.value;
+      })
+
+      data.totals[type]=sum;
+    };
+    
+    
   var data = {
     allItems: {
       exp: [],
@@ -21,7 +33,9 @@ var budgetController = (function() {
     totals: {
       exp: 0,
       inc: 0
-    }
+    },
+    budget:0,
+    percentage:-1
   };
   
   return {
@@ -36,7 +50,7 @@ var budgetController = (function() {
         ID = 0;
       }
       
-      console.log(ID);
+     // console.log(ID);
       // Create new item based on 'income' or 'expense'
       if (type === 'exp') {
         newItem = new Expense(ID, des, val);
@@ -50,6 +64,23 @@ var budgetController = (function() {
       data.allItems[type].push(newItem);
       return newItem;
     },
+    calculateBudget:function(){
+        calculateTotal('exp');
+        calculateTotal('inc');
+
+        data.budget=data.totals.inc - data.totals.exp;
+        data.percentage = Math.round((data.totals.exp)/(data.totals.inc)*100);
+      },
+      
+    getBudget :function(){
+      return {
+        budget:data.budget,
+        totalInc:data.totals.inc,
+        totalExp:data.totals.exp,
+        percentage:data.percentage
+              };
+      },
+
     testing: function() {
       console.log(data); 
     },
@@ -65,7 +96,11 @@ var UIController = (function() {
     inputValue: '.add__value',
     inputButton: '.add__btn',
     incomeContainer: '.income__list',
-    expensesContainer: '.expenses__list'
+    expensesContainer: '.expenses__list',
+    budgetlabel:'.budget__value',
+    incomeLabel:'.budget__income--value',
+    expenseLabel:'.budget__expense--value',
+    percentageLabel:'.budget__expenses--percentage'
   };
   
   return {
@@ -106,7 +141,26 @@ var UIController = (function() {
       });
       fields[0].focus();
     },
-    
+
+
+    displayBudget:function(obj){
+
+      var type;
+          obj.budget > 0 ? type = 'inc' : type = 'exp';
+           //determine if budget is - or +
+          document.querySelector(DOMStrings.budgetlabel).textContent =obj.budget;
+          document.querySelector(DOMStrings.incomeLabel).textContent=obj.totalInc;
+          document.querySelector(DOMStrings.expenseLabel).textContent=obj.totalExp;
+          
+
+        if(obj.percentage>0)
+        {
+          document.querySelector(DOMStrings.percentageLabel).textContent=obj.percentage +'%';
+        }
+        else{
+          document.querySelector(DOMStrings.percentageLabel).textContent='---';
+        }
+      },
     getDomStrings: function() {
       return DOMStrings;
     }
@@ -117,15 +171,24 @@ var UIController = (function() {
 //module to connect budgetController and uiController modules
 //global app controller
 var controller = (function(budgetCtrlr, UICtrlr) {
+
   var setupEventListeners = function() {
     var dom = UICtrlr.getDomStrings();
-    
     document.querySelector(dom.inputButton).addEventListener('click', ctrlAddItem);
     document.addEventListener('keypress', function(event){
       if (event.keyCode === 13 || event.which === 13) {
         ctrlAddItem();
       }
     });
+  };
+
+  var updateBudget =function(){
+        budgetCtrlr.calculateBudget();   
+        var budget= budgetCtrlr.getBudget();
+        UICtrlr.displayBudget(budget);
+        console.log(budget);
+
+
   };
   
   var ctrlAddItem = function () {
@@ -142,15 +205,23 @@ var controller = (function(budgetCtrlr, UICtrlr) {
     UICtrlr.clearFields();
     
     // 4. Calculate the budget
-    // 5. Display the budget on the UI    
+    // 5. Display the budget on the UI 
+    updateBudget();   
      } //console.log(input);
   };
   
   return {
     init: function(){
       console.log('This application has started!');
+      UICtrlr.displayBudget({
+        budget:0,
+        totalInc:0,
+        totalExp:0,
+        percentage:-1
+      }); 
+      
       setupEventListeners();
-    },
+    }
   }
 })(budgetController, UIController);
 
